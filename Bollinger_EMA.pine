@@ -1,0 +1,110 @@
+//@version=5
+indicator(title="Bollinger Bands Strategy", overlay=true)
+import TradingView/ta/7
+
+// EMA 10/20/60
+ema10 = input(10, title="Fast MA")
+ema20  = input(20, title="s55")
+ema60 = input(60, title="Slow MA")
+
+
+//ma definitions
+maFast = ta.ema(close, ema10)
+ma20 = ta.ema(close,ema20)
+maSlow = ta.ema(close, ema60)
+
+
+// col = maFast > maSlow ? color.blue : maFast < maSlow ? color.red : color.fuchsia
+col = color.green
+if maFast < maSlow
+	col := color.red
+
+
+p1 = plot(maSlow, title="EMA60", style=plot.style_line, linewidth=4, color=col)
+p2 = plot(maFast, title="EMA10", style=plot.style_linebr, linewidth=2, color=color.black)
+p3 = plot(ma20, title="EMA20", style=plot.style_linebr, linewidth=2, color=color.yellow)
+
+
+// Input parameters
+length = input(21, title="Bollinger Bands Length")
+mult = input(2, title="Standard Deviation Multiplier")
+
+// Calculate SMA and Standard Deviation
+basis = ta.sma(close, length)
+dev = mult * ta.stdev(close, length)
+
+// Calculate Upper and Lower Bands
+upperBand = basis + dev
+lowerBand = basis - dev
+
+
+//////////////////////////////////////Kill Time Zone///////////////////////////////////////////////////////
+var londonGroup = "Critical Session"
+londonSession_title = input.string(defval = "LO", title = "Title", tooltip = "Title for the London Session", group = londonGroup)
+londonSession_time = input.session(defval = "0200-1030", title = "Time" , group = londonGroup)
+
+
+getHour(sessionTime, timePart) =>
+    start_time_array = str.split(str.tostring(sessionTime), "-")
+    start_hour_str = array.get(start_time_array,timePart)
+    start_hour = int(str.tonumber(start_hour_str) / 100)
+    start_hour
+
+bg_color_enable_lo = false
+londonSessionStartHour = getHour(londonSession_time,0) - 1 
+londonSessionEndHour = getHour(londonSession_time,1) - 1
+
+if hour(time) >= londonSessionStartHour
+    if hour(time) <= londonSessionEndHour
+        bg_color_enable_lo := true
+// bgcolor(bg_color_enable_lo==true? color.green : color.white, transp=75)
+
+
+//////////////////////////////////////Strategy///////////////////////////////////////////////////////
+// Strategy Conditions
+buySignal = ta.crossunder(low[0], lowerBand) 
+sellSignal = ta.crossover(high[0], upperBand)
+buySignal_2 = ta.crossunder(low[0], lowerBand) 
+sellSignal_2 = ta.crossover(high[0], upperBand)
+
+
+if maFast > maSlow
+    sellSignal := false
+    sellSignal_2 := false
+
+if maFast < maSlow
+    buySignal := false
+    buySignal_2 := false
+
+resetSignal = ta.cross(maFast, maSlow)
+
+
+//////////////////////////////////////RSI///////////////////////////////////////////////////////
+len = input.int(title="RSI Period", minval=1, defval=14)
+src = input(title="RSI Source", defval=close)
+osc = ta.rsi(src, len)
+
+
+if osc > 30
+    buySignal_2 :=false
+
+if osc < 70
+    sellSignal_2 := false
+
+
+
+// Plotting Bollinger Bands
+plot(upperBand, color=color.blue, linewidth=2, title="Upper Band")
+plot(lowerBand, color=color.blue, linewidth=2, title="Lower Band")
+
+// Plot Buy and Sell signals
+plotshape(series=buySignal, title="Buy Signal", color=color.green, style=shape.labelup, location=location.belowbar, size=size.small, text="BUY")
+plotshape(series=sellSignal, title="Sell Signal", color=color.red, style=shape.labeldown, location=location.abovebar, size=size.small, text="SELL")
+// plotshape(series=buySignal_2, title="Super Buy Signal", color=color.green, style=shape.labelup, location=location.belowbar, size=size.small, text="Super B")
+// plotshape(series=sellSignal_2, title="Super Sell Signal", color=color.red, style=shape.labeldown, location=location.abovebar, size=size.small, text="Super S")
+// plotshape(ta.cross(maFast, maSlow), style=shape.triangledown, color=color.black, size=size.small, text="Reset")
+
+
+alertcondition(sellSignal == true, title='Sell now', message='Time to sell for bollinger')
+alertcondition(buySignal == true, title='Buy now', message='Time to buy for bollinger')
+alertcondition(resetSignal == true, title='Reset trend now', message='Time to rethink')
