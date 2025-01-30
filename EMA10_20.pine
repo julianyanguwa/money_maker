@@ -1,0 +1,41 @@
+study("EMA 10 20 Day & Week & Month", "EMA Day & Week & Month", overlay=true)
+//ma_len = input(title="Period in days", type=integer, defval=5, minval = 1)
+
+
+
+src = input(title="Source", type=source, defval=close)
+hide10_day = input(false, title="hide 10D EMA")
+hide20_day = input(false, title="hide 20D EMA")
+
+hide10_week = input(false, title="hide 10W EMA")
+hide20_week = input(false, title="hide 20W EMA")
+
+hide10_month = input(false, title="hide 10M EMA")
+hide20_month = input(false, title="hide 20M EMA")
+
+//390 mins in a day
+res10_day = 'D' 
+res20_day = 'D' 
+res10_week = 'W' 
+res20_week = 'W' 
+res10_month = 'M' 
+res20_month = 'M' 
+ma_len10 = 8 
+ma_len20 = 21
+
+htf_ma10 = ema(src, ma_len10)
+htf_ma20 = ema(src, ma_len20)
+
+out10_day =  iff(hide10_day, na, security(tickerid, res10_day, htf_ma10))
+out20_day = iff(hide20_day, na, security(tickerid, res20_day, htf_ma20))
+out10_week =  iff(hide10_week, na, security(tickerid, res10_week, htf_ma10))
+out20_week = iff(hide20_week, na, security(tickerid, res20_week, htf_ma20))
+out10_month =  iff(hide10_month, na, security(tickerid, res10_month, htf_ma10))
+out20_month = iff(hide20_month, na, security(tickerid, res20_month, htf_ma20))
+
+plot(out10_day, title="日线 EMA10", color=red, linewidth = 3)
+plot(out20_day,  title="日线 EMA20", color = maroon, linewidth = 3)
+plot(out10_week,  title="周线 EMA10", color=blue, linewidth = 3)
+plot(out20_week,  title="周线 EMA20", color = green, linewidth = 3)
+plot(out10_month,  title="月线 EMA10", color=teal, linewidth = 3)
+plot(out20_month,  title="月线 EMA20", color = purple, linewidth = 3)
